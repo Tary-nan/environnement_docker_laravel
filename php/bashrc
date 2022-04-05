@@ -1,0 +1,116 @@
+# vim: set sw=4 ts=4 sts=4 ft=sh tw=78 foldmarker={,} foldlevel=0 foldmethod=marker nospell:
+
+# --- Donne le nombre de fichier par extenetion dans le repertoire courant
+# ex : nb_file_by_ext => [1 Fichier conf] [1 Fichier html] [16 Fichiers sh] [26 Fichiers txt]
+nb_file_by_ext () {
+    retour=0
+    no_extention=0
+    for i in $(find . -maxdepth 1 \( ! -regex '.*/\..*' \) -type f | rev | cut -d"." -f1 | sort -u )
+    do
+        j=`echo $i | rev`
+        if [ `echo ${j} | cut -c1` != '/' ]
+        then
+            nb_fichier=`ls *.$j | wc -l`
+            if [ $nb_fichier -gt 0 ]
+            then
+               echo -n "["$nb_fichier" .$j] ";retour=1;
+            fi
+        else
+            no_extention=`expr $no_extention + 1`;retour=1;
+        fi
+    done
+
+    if [ $no_extention -eq 1 ]
+    then
+       echo -n "["$no_extention" Fichier sans extention] ";retour=1;
+    elif [ $no_extention -gt 1 ]
+    then
+       echo -n "["$no_extention" Fichiers sans extention] ";retour=1;
+    fi
+
+    if [ $retour -eq 1 ]
+    then
+        echo "";
+        #big_file=`ls -hS | grep ^- | head -1`
+        #small_file=`ls -hSr | grep ^- | head -1`
+        #echo "Le plus gros fichier : "
+        #ls -hl --time-style=+"%d/%m/%Y %H:%M" $big_file
+        #echo "Le plus petit fichier : "
+        #ls -hl --time-style=+"%d/%m/%Y %H:%M" $small_file
+    fi
+}
+# --- deconte_elements compte le nombre d'éléments présent dans le repertoire courant
+# ex : deconte_elements => [6 Fichiers] [4 Dossiers] [1 Fichier caché]
+deconte_elements () {
+    nb_fichier=`find . -maxdepth 1 \( ! -regex '.*/\..*' \) -type f | wc -l`
+    nb_dossier=`find . -maxdepth 1 \( ! -regex '.*/\..*' \) \( ! -regex '.' \) -type d | wc -l`
+    nb_fichier_cache=`find . -maxdepth 1 \( -regex '.*/\..*' \) -type f | wc -l`
+    nb_dossier_cache=`find . -maxdepth 1 \( -regex '.*/\..*' \) \( ! -regex '.' \) -type d | wc -l`
+    nb_lien_symbolique=`find . -maxdepth 1 \( ! -regex '.*/\..*' \) -type l | wc -l`
+    retour=0
+    fichier_detail=0;
+    if [ $nb_fichier -eq 1 ]
+    then
+        echo -n "["$nb_fichier" Fichier] "; retour=1;fichier_detail=1;
+    elif [ $nb_fichier -gt 1 ]
+    then
+        echo -n "["$nb_fichier" Fichiers] "; retour=1;fichier_detail=1;
+    fi
+    if [ $nb_dossier -eq 1 ]
+    then
+        echo -n "["$nb_dossier" Dossier] "; retour=1;
+    elif [ $nb_dossier -gt 1 ]
+    then
+        echo -n "["$nb_dossier" Dossiers] "; retour=1;
+    fi
+
+    if [ $nb_fichier_cache -eq 1 ]
+    then
+        echo -n "["$nb_fichier_cache" Fichier caché] "; retour=1;
+    elif [ $nb_fichier_cache -gt 1 ]
+    then
+        echo -n "["$nb_fichier_cache" Fichiers cachés] "; retour=1;
+    fi
+
+    if [ $nb_dossier_cache -eq 1 ]
+    then
+        echo -n "["$nb_dossier_cache" Dossier caché] "; retour=1;
+    elif [ $nb_dossier_cache -gt 1 ]
+    then
+        echo -n "["$nb_dossier_cache" Dossiers cachés] "; retour=1;
+    fi
+
+    if [ $nb_lien_symbolique -eq 1 ]
+    then
+        echo -n "["$nb_lien_symbolique" Lien ymbolique] "; retour=1;
+    elif [ $nb_lien_symbolique -gt 1 ]
+    then
+        echo -n "["$nb_lien_symbolique" Liens symboliques] "; retour=1;
+    fi
+
+    if [ $retour -gt 0 ]
+    then
+        echo "";
+    fi
+    if [ $fichier_detail -gt 0 ]
+    then
+        nb_file_by_ext
+    fi
+}
+
+# la commande à rajouter dans le ~/.bashrc pour combiner cd et ls
+# et revenir au /home si on fait un "cd" sans chemin derrière
+# (le comportement par défaut de cd).
+cd () {
+if [ -z "$1" ]
+then
+    builtin cd
+else
+    #builtin cd "$*" && ls -l -h --group-directories-first --time-style=+"%d/%m/%Y %H:%M" --color=always -F;
+    clear;
+    builtin cd "$*" && ls -l --group-directories-first --time-style=+"%d/%m/%Y %H:%M" --color=always -F;
+    deconte_elements;
+fi
+}
+
+alias ll='clear;ls -l -h --group-directories-first --time-style=+"%d/%m/%Y %H:%M" --color=always -F;deconte_elements'        # long listing

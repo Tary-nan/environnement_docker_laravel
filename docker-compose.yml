@@ -1,0 +1,43 @@
+version: "3.2"
+
+services:
+
+  laravel:
+    build:
+      context: './php/'
+      args:
+       USER: ${DOCKER_USER}
+       USER_ID: ${USER_ID}
+       GROUP_ID: ${GROUP_ID}
+       NODE_VERSION: ${NODE_VERSION}
+    depends_on:
+      - laraveldb
+    networks:
+      - travellist
+    expose:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.laravel.rule=Host(`laravel.localhost`,`laravel.neptune`)"
+      - "traefik.http.routers.laravel.entryPoints=insecure"
+    volumes:
+      - ./www/:/var/www/html/
+    container_name: "${PHP_NAME}"
+
+  laraveldb:
+    image: mariadb:${MARIADB_VERSION:-latest}
+    networks:
+      - travellist
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${DB_NAME}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+    container_name: "${MARIADB_NAME}"
+
+networks:
+  travellist:
+    external:
+      name: traefik_webgateway
